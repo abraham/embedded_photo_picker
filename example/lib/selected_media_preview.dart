@@ -17,14 +17,15 @@ class SelectedMediaPreview extends StatefulWidget {
 }
 
 class _SelectedMediaPreviewState extends State<SelectedMediaPreview> {
-  late Future<Uint8List> _thumbnail = const EmbeddedPhotoPickerMedia()
-      .loadThumbnail(widget.uri);
+  late Future<Uint8List> _thumbnail = const PhotoPickerMedia().loadThumbnail(
+    widget.uri,
+  );
 
   @override
   void didUpdateWidget(SelectedMediaPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.uri != widget.uri) {
-      _thumbnail = const EmbeddedPhotoPickerMedia().loadThumbnail(widget.uri);
+      _thumbnail = const PhotoPickerMedia().loadThumbnail(widget.uri);
     }
   }
 

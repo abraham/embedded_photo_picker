@@ -1,19 +1,19 @@
 # Embedded Photo Picker
 
 Embed Android's system photo picker directly in a Flutter layout. The plugin
-supports selection callbacks, runtime availability checks, and image/video
-thumbnails without requesting broad gallery permissions.
+supports continuous selection, runtime support checks, advanced filtering, and
+image/video thumbnails without broad gallery permissions.
 
 > This integration is experimental. Validate rendering, accessibility, cloud
 > media, and OEM behavior on your target devices before production use.
 
 ## Requirements
 
-- Flutter 3.44+, Dart 3.13+, Java 17, and Android compile SDK 37.1+
-- Android Gradle Plugin 9.3.3+ and Gradle 9.5+
+- Flutter 3.44+, Dart 3.13+, Java 17
+- Android compile SDK 37.1+, Android Gradle Plugin 9.3.3+, Gradle 9.5+
 - App minSdk 23+
-- Android 16/API 36+, or Android 14/15 with U SDK Extension 15+
-- An installed embedded picker service
+- Embedded picking requires Android 16+, or Android 14/15 with U SDK Extension
+  15+ and an installed embedded picker service
 
 Unsupported devices and non-Android platforms render the supplied fallback.
 
@@ -23,162 +23,129 @@ Unsupported devices and non-Android platforms render the supplied fallback.
 flutter pub add embedded_photo_picker
 ```
 
-Set your Android app's compile SDK in `build.gradle.kts`:
-
-```kotlin
-android {
-  compileSdk {
-    version = release(37) {
-      minorApiLevel = 1
-    }
-  }
-}
-```
-
-Then add a bounded picker:
+The picker uses controlled selection state. Native grants and revocations arrive
+as complete snapshots, while `added` and `removed` remain available for work
+that depends on the individual change.
 
 ```dart
-import 'package:embedded_photo_picker/embedded_photo_picker.dart';
+List<Uri> selected = [];
 
-SizedBox(
-  height: 400,
-  child: EmbeddedPhotoPicker(
-    options: EmbeddedPhotoPickerOptions(
-      maxSelection: 4,
-      mimeTypes: ['image/*', 'video/*'],
-      orderedSelection: true,
-    ),
-    onReady: (controller) => pickerController = controller,
-    onUrisGranted: (uris) => addAttachments(uris),
-    onUrisRevoked: (uris) => removeAttachments(uris),
-    onSelectionComplete: closePicker,
-    fallbackBuilder: (context) => YourExistingGalleryButton(),
-    onError: reportPickerError,
-  ),
+EmbeddedPhotoPicker(
+  selection: selected,
+  onChanged: (change) {
+    setState(() => selected = change.selection);
+  },
+  onDone: (selection) => closePicker(),
+  fallbackBuilder: (context) => YourExistingGalleryButton(),
 )
 ```
 
-No storage permission or custom activity code is required. To check support
-before mounting the widget:
+Removing a URI from `selection` automatically deselects it in Android. The
+widget owns its native controller and remounts itself when creation-time config
+or externally added selection changes.
+
+## Configuration
+
+Common options stay flat and typed:
 
 ```dart
-final available = await EmbeddedPhotoPickerController.isAvailable();
-```
-
-The plugin does not open a classic picker when the embedded picker is
-unavailable.
-
-For features introduced after the base API, inspect the device first:
-
-```dart
-final capabilities =
-    await EmbeddedPhotoPickerController.getCapabilities();
-```
-
-### Selection constraints
-
-Android 17/API 37 and Android 14+ with U SDK Extension 22 can disable media that
-does not meet host requirements:
-
-```dart
-final options = EmbeddedPhotoPickerOptions(
+final config = PickerConfig(
   maxSelection: 4,
-  selection: EmbeddedPhotoPickerSelectionOptions(
-    maxMediaItemSizeInBytes: 10 * 1024 * 1024,
-    maxSelectionBatchSizeInBytes: 25 * 1024 * 1024,
-    minMediaItemResolutionInPixels: 1_000_000,
-    maxVideoDuration: const Duration(minutes: 2),
-    mimeTypes: ['image/jpeg', 'video/mp4'],
-  ),
+  filter: PickerFilter.images,
+  ordered: true,
+  accentColor: const Color(0xff087f8c),
 );
+
+EmbeddedPhotoPicker(
+  selection: selected,
+  config: config,
+  onChanged: (change) => setState(() => selected = change.selection),
+)
 ```
 
-Check `capabilities.supportsSelectionConstraints` before using non-empty
-constraints. On older devices, the session reports `unsupported_feature` rather
-than silently ignoring them. Top-level `mimeTypes` hide unmatched media;
-selection constraint MIME types leave unmatched media visible but disabled.
+Use `PickerFilter.all`, `.images`, `.videos`, or
+`PickerFilter.mimeTypes([...])`. Filter MIME types hide unmatched media.
 
-### Navigation and highlights
+### Constraints
 
-Choose the opening tab, highlight an album or search, and optionally enable
-scrolling while collapsed:
+Constraints keep unmatched media visible but unavailable to select:
 
 ```dart
-final options = EmbeddedPhotoPickerOptions(
-  navigation: EmbeddedPhotoPickerNavigationOptions(
-    launchTab: EmbeddedPhotoPickerLaunchTab.collections,
-    highlightAlbum: EmbeddedPhotoPickerHighlightAlbum.favorites,
-    highlightType: EmbeddedPhotoPickerHighlightType.collapsed,
-    collapsedModeScrollingEnabled: true,
+final config = PickerConfig(
+  maxSelection: 4,
+  constraints: PickerConstraints(
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    maxTotalSizeBytes: 25 * 1024 * 1024,
+    minResolutionPixels: 1_000_000,
+    maxVideoDuration: const Duration(minutes: 2),
+    allowedMimeTypes: ['image/jpeg', 'video/mp4'],
   ),
 );
 ```
 
-Use `highlightSearchQuery` instead of `highlightAlbum` to highlight search
-results. Album/search highlights require `supportsHighlights`; expanded
-highlight presentation additionally requires `supportsInitialExpandedState`
-and an initially expanded widget. Launch tabs and collapsed scrolling require
-their corresponding capability flags. Unsupported settings report
-`unsupported_feature`.
+### Presentation
+
+Navigation, highlights, and appearance share one presentation object. Highlight
+factories make album and search requests mutually exclusive.
+
+```dart
+final config = PickerConfig(
+  presentation: const PickerPresentation(
+    initialTab: PickerTab.collections,
+    highlight: PickerHighlight.album(
+      PickerAlbum.favorites,
+      style: PickerHighlightStyle.section,
+    ),
+    collapsedScrolling: true,
+    gridAspectRatio: PickerGridAspectRatio.portrait9By16,
+    showSelectionBar: false,
+  ),
+);
+```
+
+Use `PickerHighlight.search('receipts')` for text-query highlights.
 
 ### Location metadata
 
-Location metadata is redacted by default. On devices where
-`capabilities.supportsLocationMetadata` is true, request access explicitly:
+Location metadata stays redacted unless explicitly requested:
 
 ```dart
-final options = EmbeddedPhotoPickerOptions(
-  requestLocationMetadata: true,
+final config = PickerConfig(
+  locationMetadata: PickerLocationMetadata.request,
 );
 ```
 
 Android may ask the user whether to share location metadata, and the user's
-choice is final. A successful request does not guarantee metadata exists on a
-selected item. Handle missing or redacted values and read metadata only while
-URI access remains valid. Unsupported devices report `unsupported_feature`.
+choice is final. A successful request does not guarantee metadata exists.
 
-### UI customization
+## Device support
 
-On devices where `capabilities.supportsEmbeddedUiCustomization` is true,
-customize the media grid and expanded selection bar:
+The widget checks its config automatically and renders the fallback instead of
+opening a partially configured picker. Check support yourself only when the
+surrounding UI needs to adapt in advance:
 
 ```dart
-final options = EmbeddedPhotoPickerOptions(
-  ui: const EmbeddedPhotoPickerUiOptions(
-    gridAspectRatio: EmbeddedPhotoPickerGridAspectRatio.portrait9By16,
-    selectionBarVisibleInExpandedMode: false,
-  ),
-);
+final support = await EmbeddedPhotoPicker.checkSupport(config);
+
+if (support.isSupported) {
+  // Every feature required by config is available.
+} else {
+  print(support.unsupportedFeatures);
+}
 ```
 
-Grid options are the Android default, square 1:1, or portrait 9:16. These
-settings require Android 17.1 or U SDK Extension 23; unsupported devices report
-`unsupported_feature`.
-
-## Selection and lifecycle
-
-- Grant and revoke callbacks contain changes, not complete selection snapshots.
-  Track selected URIs in the host app and handle duplicate grants safely.
-- `controller.deselect(uris)` updates Android but does not emit a revoke
-  callback. Update app state after the command succeeds.
-- Keep a controller only while its widget is mounted and ready. Do not dispose
-  it yourself; `onReady` may provide it again after reattachment.
-- Options are captured when mounted. Use a new widget key to apply new options.
-- `expanded` changes the native picker mode but not the Flutter widget size.
-- `visible: false` notifies Android but does not hide the Flutter widget.
-- Session failures render the fallback. Remount with a new key to retry.
+Feature availability depends on Android SDK extensions delivered through system
+updates. Unsupported requested features report `unsupported_feature` through
+`onError`.
 
 ## Thumbnails and media
 
 Selected values are Android `content://` URIs, not filesystem paths. Never pass
-them to `File(uri.path)`. The host app owns copying, persistence, uploads, and
-cleanup. Access may be revoked, and cloud media may require an asynchronous
-download.
-
-Load a bounded PNG thumbnail with the granted URI:
+them to `File(uri.path)`. The host owns copying, persistence, uploads, and
+cleanup. Access can be revoked and cloud media may download asynchronously.
 
 ```dart
-final png = await const EmbeddedPhotoPickerMedia().loadThumbnail(
+final png = await const PhotoPickerMedia().loadThumbnail(
   selectedUri,
   width: 384,
   height: 384,
@@ -189,8 +156,7 @@ final preview = Image.memory(png, fit: BoxFit.contain);
 
 Thumbnail dimensions must be between 1 and 1024 physical pixels. The API
 requires Android 10+ and existing read access; it does not request or persist
-permissions. Handle `PlatformException`, revoked access, and image decoding
-errors in the UI.
+permissions.
 
 ## Rendering constraints
 
@@ -202,24 +168,22 @@ menus or dialogs.
 
 ## Example
 
-The example demonstrates previews, removal, expanded and collapsed modes, and
-host-owned show/hide transitions:
-
 ```sh
 cd example
 flutter pub get
 flutter run -d <android-id>
 ```
 
+The example demonstrates expanded and collapsed pickers, previews, host-side
+removal, message sending, and show/hide transitions.
+
 ## Development
 
 ```sh
-# From the package directory
 flutter analyze
 flutter test
 
 cd example
-flutter analyze
 flutter test
 flutter build apk --debug
 
@@ -227,16 +191,10 @@ cd android
 ./gradlew :embedded_photo_picker:testDebugUnitTest
 ```
 
-GitHub Actions also checks formatting and validates the publication archive.
-Before releasing, run:
-
-```sh
-flutter pub publish --dry-run
-```
-
-Unit tests cannot verify the remote picker surface or Android permission grants.
-Test selection, revocation, cloud media, accessibility, orientation, lifecycle,
-and overlays on supported and unsupported physical devices.
+Before releasing, run `flutter pub publish --dry-run`. Unit tests cannot verify
+the remote picker surface or Android permission grants, so test selection,
+revocation, cloud media, accessibility, lifecycle, and overlays on target
+physical devices.
 
 ## References
 

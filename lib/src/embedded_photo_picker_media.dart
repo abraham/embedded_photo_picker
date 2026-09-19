@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 ///
 /// This does not request or persist URI permissions, copy original media, or
 /// cache thumbnails. It can also load thumbnails for selected videos.
-class EmbeddedPhotoPickerMedia {
+class PhotoPickerMedia {
   /// Creates a media repository backed by Android's content resolver.
-  const EmbeddedPhotoPickerMedia();
+  const PhotoPickerMedia();
 
   static const _channel = MethodChannel('embedded_photo_picker/media');
 

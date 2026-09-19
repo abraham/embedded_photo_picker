@@ -3,10 +3,10 @@
 Run `flutter pub get`, then `flutter run -d <android-id>` from this directory
 on a supported Android device. See the parent package README for requirements.
 
-The example uses the plugin's public widget, controller, options, and
-`EmbeddedPhotoPickerMedia.loadThumbnail` APIs. No custom native channel or
-storage permissions are needed. Selected image/video thumbnails appear in a
-horizontal strip with removal controls and loading/error states.
+The example uses the plugin's declarative selection, typed config, and
+`PhotoPickerMedia.loadThumbnail` APIs. No custom native channel or storage
+permissions are needed. Selected image/video thumbnails appear in a horizontal
+strip with removal controls and loading/error states.
 
 The starting screen offers two examples. Both start with the picker hidden;
 the photo button opens it on demand.

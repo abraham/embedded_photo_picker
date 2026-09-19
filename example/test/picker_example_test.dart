@@ -12,7 +12,16 @@ void main() {
   const channel = MethodChannel('embedded_photo_picker');
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-  setUp(() => messenger.setMockMethodCallHandler(channel, (_) async => false));
+  setUp(
+    () => messenger.setMockMethodCallHandler(
+      channel,
+      (_) async => {
+        'available': false,
+        'androidApiLevel': 0,
+        'uExtensionVersion': 0,
+      },
+    ),
+  );
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
   testWidgets(
     'composer has five bordered lines and aligned gallery and post controls',
@@ -56,7 +65,12 @@ void main() {
       );
       final firstUri = Uri.parse('content://media/picker/1');
       final secondUri = Uri.parse('content://media/picker/2');
-      picker.onUrisGranted([firstUri, secondUri]);
+      picker.onChanged(
+        PickerSelectionChange(
+          selection: [firstUri, secondUri],
+          added: [firstUri, secondUri],
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(SelectedMediaPreview), findsNWidgets(2));
       expect(find.text(firstUri.toString()), findsNothing);
@@ -71,7 +85,9 @@ void main() {
             .uri,
         secondUri,
       );
-      picker.onUrisRevoked([secondUri]);
+      picker.onChanged(
+        PickerSelectionChange(selection: const [], removed: [secondUri]),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(SelectedMediaPreview), findsNothing);
       expect(tester.takeException(), isNull);
@@ -100,7 +116,7 @@ void main() {
     );
     tester
         .widget<EmbeddedPhotoPicker>(find.byType(EmbeddedPhotoPicker))
-        .onUrisGranted(uris);
+        .onChanged(PickerSelectionChange(selection: uris, added: uris));
     await tester.pumpAndSettle();
     final strip = find.byType(ListView);
     expect(tester.widget<ListView>(strip).scrollDirection, Axis.horizontal);
@@ -349,9 +365,12 @@ void main() {
     final divider = find.bySemanticsLabel('Resize photo picker');
     await tester.drag(divider, const Offset(0, -1000));
     await tester.pumpAndSettle();
+    final selectedUri = Uri.parse('content://media/picker/1');
     tester
         .widget<EmbeddedPhotoPicker>(find.byType(EmbeddedPhotoPicker))
-        .onUrisGranted([Uri.parse('content://media/picker/1')]);
+        .onChanged(
+          PickerSelectionChange(selection: [selectedUri], added: [selectedUri]),
+        );
     await tester.pumpAndSettle();
     await tester.drag(divider, const Offset(0, -1000));
     await tester.pumpAndSettle();
@@ -370,8 +389,7 @@ void main() {
     expect(
       tester
           .widget<EmbeddedPhotoPicker>(find.byType(EmbeddedPhotoPicker))
-          .options
-          .preselectedUris,
+          .selection,
       [Uri.parse('content://media/picker/1')],
     );
     await tester.tap(find.byTooltip('Remove attachment'));
@@ -384,7 +402,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: PickerExample()));
     await tester.pumpAndSettle();
 
-    final availability = Completer<bool>();
+    final availability = Completer<Map<String, Object>>();
     messenger.setMockMethodCallHandler(channel, (_) => availability.future);
     await tester.tap(find.byTooltip('Open picker'));
     await tester.pump();
@@ -392,7 +410,11 @@ void main() {
     await tester.tap(find.byTooltip('Close picker'));
     await tester.pump();
     expect(find.byType(EmbeddedPhotoPicker), findsNothing);
-    availability.complete(false);
+    availability.complete({
+      'available': false,
+      'androidApiLevel': 0,
+      'uExtensionVersion': 0,
+    });
     await tester.pumpAndSettle();
     expect(find.byType(EmbeddedPhotoPicker), findsNothing);
     expect(tester.takeException(), isNull);

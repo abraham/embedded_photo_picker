@@ -21,14 +21,12 @@ class _ChatExampleState extends State<ChatExample>
   );
   final _selected = <Uri>{};
   final _sent = <({String text, List<Uint8List> images})>[];
-  EmbeddedPhotoPickerController? _picker;
   bool _showPicker = false;
   bool _sending = false;
   String? _error;
 
   void _closePicker() => setState(() {
     _showPicker = false;
-    _picker = null;
     _slide.value = 0;
   });
 
@@ -41,14 +39,7 @@ class _ChatExampleState extends State<ChatExample>
     }
   }
 
-  Future<void> _remove(Uri uri) async {
-    try {
-      await _picker?.deselect([uri]);
-      if (mounted) setState(() => _selected.remove(uri));
-    } on PlatformException {
-      if (mounted) setState(() => _error = 'Unable to remove attachment');
-    }
-  }
+  void _remove(Uri uri) => setState(() => _selected.remove(uri));
 
   Future<void> _send() async {
     final text = _message.text.trim();
@@ -60,15 +51,13 @@ class _ChatExampleState extends State<ChatExample>
     });
     try {
       final images = await Future.wait(
-        uris.map(const EmbeddedPhotoPickerMedia().loadThumbnail),
+        uris.map(const PhotoPickerMedia().loadThumbnail),
       );
       if (!mounted) return;
       if (!uris.every(_selected.contains)) {
         setState(() => _error = 'Attachments changed. Review and send again.');
         return;
       }
-      if (uris.isNotEmpty) await _picker?.deselect(uris);
-      if (!mounted) return;
       setState(() {
         _sent.add((text: text, images: images));
         _selected.removeAll(uris);
@@ -258,23 +247,20 @@ class _ChatExampleState extends State<ChatExample>
                   );
                 },
                 child: EmbeddedPhotoPicker(
-                  options: EmbeddedPhotoPickerOptions(
+                  selection: _selected.toList(),
+                  config: PickerConfig(
                     maxSelection: 4,
-                    mimeTypes: ['image/*'],
-                    preselectedUris: _selected.toList(),
+                    filter: PickerFilter.images,
                   ),
                   expanded: false,
-                  onReady: (controller) {
-                    _picker = controller;
-                    _revealPicker();
-                  },
-                  onUrisGranted: (uris) =>
-                      setState(() => _selected.addAll(uris)),
-                  onUrisRevoked: (uris) =>
-                      setState(() => _selected.removeAll(uris)),
-                  onSelectionComplete: _closePicker,
+                  onReady: _revealPicker,
+                  onChanged: (change) => setState(() {
+                    _selected
+                      ..clear()
+                      ..addAll(change.selection);
+                  }),
+                  onDone: (_) => _closePicker(),
                   onError: (_) => setState(() {
-                    _picker = null;
                     _error = 'Photo picker unavailable';
                   }),
                   fallbackBuilder: (_) {

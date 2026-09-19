@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('embedded_photo_picker/media');
-  const media = EmbeddedPhotoPickerMedia();
+  const media = PhotoPickerMedia();
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   final uri = Uri.parse('content://media/picker/1');

@@ -1,7 +1,6 @@
 import 'package:embedded_photo_picker/embedded_photo_picker.dart';
 import 'package:embedded_photo_picker_example/selected_media_preview.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class PickerExample extends StatefulWidget {
   const PickerExample({super.key});
@@ -17,7 +16,6 @@ class _PickerExampleState extends State<PickerExample>
     vsync: this,
     duration: const Duration(milliseconds: 300),
   )..addStatusListener(_slideStatusChanged);
-  EmbeddedPhotoPickerController? _controller;
   bool _showPicker = false;
   bool _pickerMounted = false;
   double _pickerFraction = 0.75;
@@ -32,21 +30,11 @@ class _PickerExampleState extends State<PickerExample>
     setState(() => _pickerFraction = fraction.clamp(0.0, 1.0));
   }
 
-  Future<void> _remove(Uri uri) async {
-    try {
-      await _controller?.deselect([uri]);
-      if (mounted) setState(() => _selected.remove(uri));
-    } on PlatformException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    }
-  }
+  void _remove(Uri uri) => setState(() => _selected.remove(uri));
 
   void _slideStatusChanged(AnimationStatus status) {
     if (status == AnimationStatus.dismissed && !_showPicker) {
-      setState(() {
-        _controller = null;
-        _pickerMounted = false;
-      });
+      setState(() => _pickerMounted = false);
     }
   }
 
@@ -181,22 +169,19 @@ class _PickerExampleState extends State<PickerExample>
                           right: 0,
                           height: pickerHeight,
                           child: EmbeddedPhotoPicker(
-                            options: EmbeddedPhotoPickerOptions(
+                            selection: _selected.toList(),
+                            config: PickerConfig(
                               maxSelection: 4,
-                              preselectedUris: _selected.toList(),
-                              orderedSelection: true,
+                              ordered: true,
                             ),
-                            onReady: (controller) {
-                              _controller = controller;
-                              _reveal();
-                            },
-                            onUrisGranted: (uris) =>
-                                setState(() => _selected.addAll(uris)),
-                            onUrisRevoked: (uris) =>
-                                setState(() => _selected.removeAll(uris)),
-                            onSelectionComplete: _close,
+                            onChanged: (change) => setState(() {
+                              _selected
+                                ..clear()
+                                ..addAll(change.selection);
+                            }),
+                            onReady: _reveal,
+                            onDone: (_) => _close(),
                             onError: (error) => setState(() {
-                              _controller = null;
                               _error = error.message ?? error.code;
                             }),
                             loadingBuilder: (_) => const Center(

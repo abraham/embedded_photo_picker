@@ -11,7 +11,16 @@ void main() {
   const channel = MethodChannel('embedded_photo_picker');
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-  setUp(() => messenger.setMockMethodCallHandler(channel, (_) async => false));
+  setUp(
+    () => messenger.setMockMethodCallHandler(
+      channel,
+      (_) async => {
+        'available': false,
+        'androidApiLevel': 0,
+        'uExtensionVersion': 0,
+      },
+    ),
+  );
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
   testWidgets('chooser opens compose and chat and returns home', (

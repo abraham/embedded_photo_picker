@@ -28,7 +28,14 @@ void main() {
     picture.dispose();
   });
   setUp(() {
-    messenger.setMockMethodCallHandler(pickerChannel, (_) async => false);
+    messenger.setMockMethodCallHandler(
+      pickerChannel,
+      (_) async => {
+        'available': false,
+        'androidApiLevel': 0,
+        'uExtensionVersion': 0,
+      },
+    );
     messenger.setMockMethodCallHandler(mediaChannel, (_) async {
       throw PlatformException(code: 'thumbnail_unavailable');
     });
@@ -152,7 +159,7 @@ void main() {
   testWidgets('chat can close before availability completes and reopen', (
     tester,
   ) async {
-    final availability = Completer<bool>();
+    final availability = Completer<Map<String, Object>>();
     messenger.setMockMethodCallHandler(
       pickerChannel,
       (_) => availability.future,
@@ -163,7 +170,11 @@ void main() {
     await tester.tap(find.byTooltip('Close photos'));
     await tester.pump();
     expect(find.byType(EmbeddedPhotoPicker), findsNothing);
-    availability.complete(false);
+    availability.complete({
+      'available': false,
+      'androidApiLevel': 0,
+      'uExtensionVersion': 0,
+    });
     await tester.pumpAndSettle();
     expect(find.byType(EmbeddedPhotoPicker), findsNothing);
     await tester.tap(find.byTooltip('Add photos'));
@@ -183,7 +194,8 @@ void main() {
     final picker = tester.widget<EmbeddedPhotoPicker>(
       find.byType(EmbeddedPhotoPicker),
     );
-    picker.onUrisGranted([Uri.parse('content://media/1')]);
+    final uri = Uri.parse('content://media/1');
+    picker.onChanged(PickerSelectionChange(selection: [uri], added: [uri]));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Send message'));
     await tester.pumpAndSettle();
@@ -205,9 +217,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Add photos'));
     await tester.pumpAndSettle();
+    final uri = Uri.parse('content://media/1');
     tester
         .widget<EmbeddedPhotoPicker>(find.byType(EmbeddedPhotoPicker))
-        .onUrisGranted([Uri.parse('content://media/1')]);
+        .onChanged(PickerSelectionChange(selection: [uri], added: [uri]));
     await tester.enterText(find.byType(TextField), 'Keep this draft');
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Send message'));
@@ -243,7 +256,12 @@ void main() {
       );
       final first = Uri.parse('content://media/1');
       final second = Uri.parse('content://media/2');
-      picker.onUrisGranted([first, second]);
+      picker.onChanged(
+        PickerSelectionChange(
+          selection: [first, second],
+          added: [first, second],
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(SelectedMediaPreview), findsNWidgets(2));
       expect(tester.takeException(), isNull);
@@ -256,7 +274,9 @@ void main() {
       await tester.tap(find.byTooltip('Remove attachment').first);
       await tester.pumpAndSettle();
       expect(find.byType(SelectedMediaPreview), findsOneWidget);
-      picker.onUrisRevoked([second]);
+      picker.onChanged(
+        PickerSelectionChange(selection: const [], removed: [second]),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(SelectedMediaPreview), findsNothing);
       expect(tester.takeException(), isNull);

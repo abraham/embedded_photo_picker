@@ -2,7 +2,6 @@
 library;
 
 export 'src/embedded_photo_picker.dart';
-export 'src/embedded_photo_picker_capabilities.dart';
-export 'src/embedded_photo_picker_controller.dart';
 export 'src/embedded_photo_picker_media.dart';
-export 'src/embedded_photo_picker_options.dart';
+export 'src/picker_config.dart';
+export 'src/picker_support.dart';

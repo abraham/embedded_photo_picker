@@ -1,4 +1,5 @@
-import 'package:embedded_photo_picker/embedded_photo_picker.dart';
+import 'package:embedded_photo_picker/src/picker_config.dart';
+import 'package:embedded_photo_picker/src/picker_platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,12 +9,12 @@ void main() {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   const channel = MethodChannel('embedded_photo_picker/view/7');
-  late EmbeddedPhotoPickerController controller;
+  late NativePickerController controller;
   late List<Object> events;
 
   setUp(() {
     events = [];
-    controller = EmbeddedPhotoPickerController(
+    controller = NativePickerController(
       7,
       onReady: () => events.add('ready'),
       onGranted: events.add,
@@ -33,30 +34,43 @@ void main() {
   });
 
   test(
-    'availability is guarded on unsupported platforms and missing plugins',
+    'support is guarded on unsupported platforms and missing plugins',
     () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-      expect(await EmbeddedPhotoPickerController.isAvailable(), isFalse);
+      expect(
+        (await PickerPlatform.checkSupport(PickerConfig.defaults)).isSupported,
+        isFalse,
+      );
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      expect(await EmbeddedPhotoPickerController.isAvailable(), isFalse);
+      expect(
+        (await PickerPlatform.checkSupport(PickerConfig.defaults)).isSupported,
+        isFalse,
+      );
       messenger.setMockMethodCallHandler(
         const MethodChannel('embedded_photo_picker'),
-        (call) async => true,
+        (call) async => {
+          'available': true,
+          'androidApiLevel': 37,
+          'uExtensionVersion': 23,
+        },
       );
-      expect(await EmbeddedPhotoPickerController.isAvailable(), isTrue);
+      expect(
+        (await PickerPlatform.checkSupport(PickerConfig.defaults)).isSupported,
+        isTrue,
+      );
     },
   );
 
   test('reports optional Android capabilities', () async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     expect(
-      await EmbeddedPhotoPickerController.getCapabilities(),
-      same(EmbeddedPhotoPickerCapabilities.unavailable),
+      (await PickerPlatform.checkSupport(PickerConfig.defaults)).available,
+      isFalse,
     );
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     expect(
-      await EmbeddedPhotoPickerController.getCapabilities(),
-      same(EmbeddedPhotoPickerCapabilities.unavailable),
+      (await PickerPlatform.checkSupport(PickerConfig.defaults)).available,
+      isFalse,
     );
     messenger.setMockMethodCallHandler(
       const MethodChannel('embedded_photo_picker'),
@@ -74,12 +88,16 @@ void main() {
       },
     );
 
-    final capabilities = await EmbeddedPhotoPickerController.getCapabilities();
-    expect(capabilities.available, isTrue);
-    expect(capabilities.androidApiLevel, 34);
-    expect(capabilities.uExtensionVersion, 22);
-    expect(capabilities.supportsSelectionConstraints, isTrue);
-    expect(capabilities.supportsLaunchTab, isFalse);
+    final config = PickerConfig(
+      presentation: const PickerPresentation(initialTab: PickerTab.photos),
+    );
+    final support = await PickerPlatform.checkSupport(config);
+    expect(support.available, isTrue);
+    expect(support.androidApiLevel, 34);
+    expect(support.uExtensionVersion, 22);
+    expect(support.supports(PickerFeature.selectionConstraints), isTrue);
+    expect(support.supports(PickerFeature.launchTab), isFalse);
+    expect(support.unsupportedFeatures, {PickerFeature.launchTab});
   });
 
   test(
@@ -91,8 +109,8 @@ void main() {
         return null;
       });
       await controller.connect();
-      await controller.setExpanded(expanded: true);
-      await controller.setVisible(visible: false);
+      await controller.setExpanded(true);
+      await controller.setVisible(false);
       await controller.deselect([Uri.parse('content://media/1')]);
       expect(calls.map((call) => call.method), [
         'connect',
@@ -107,7 +125,7 @@ void main() {
         throwsArgumentError,
       );
       controller.dispose();
-      expect(() => controller.setVisible(visible: true), throwsStateError);
+      expect(() => controller.setVisible(true), throwsStateError);
     },
   );
 

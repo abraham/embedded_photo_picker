@@ -1,6 +1,8 @@
 ## 0.1.0
 
 - Initial experimental Android embedded picker widget and controller.
+- Replace the prerelease controller/delta API with controlled selection,
+	typed configuration, config-aware support checks, and automatic remounting.
 - Runtime capability detection, host fallback, selection events, and lifecycle.
 - Add detailed runtime capabilities for Android feature-level checks.
 - Creation-time selection limits, MIME filters, preselection, accent, and theme.
