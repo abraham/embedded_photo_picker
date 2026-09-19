@@ -2,6 +2,7 @@ package dev.flutter.embedded_photo_picker
 
 import android.provider.MediaStore
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
+import android.widget.photopicker.EmbeddedPhotoPickerUiCustomizationParams
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -89,6 +90,34 @@ class PickerAvailabilityTest {
         assertEquals(
             "Location metadata requires Android 17.1 or U SDK Extension 23",
             error.message,
+        )
+    }
+
+    @Test fun embeddedUiCustomizationRequiresExtension23() {
+        validateUiCustomizationSupport(configured = false, supported = false)
+        validateUiCustomizationSupport(configured = true, supported = true)
+        val error = assertThrows(UnsupportedPickerFeatureException::class.java) {
+            validateUiCustomizationSupport(configured = true, supported = false)
+        }
+
+        assertEquals(
+            "Embedded UI customization requires Android 17.1 or U SDK Extension 23",
+            error.message,
+        )
+    }
+
+    @Test fun mapsEmbeddedGridAspectRatios() {
+        assertEquals(
+            EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_UNDEFINED,
+            gridAspectRatioValue("systemDefault"),
+        )
+        assertEquals(
+            EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_SQUARE_1_1,
+            gridAspectRatioValue("square"),
+        )
+        assertEquals(
+            EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16,
+            gridAspectRatioValue("portrait9By16"),
         )
     }
 

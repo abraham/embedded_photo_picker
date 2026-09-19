@@ -137,6 +137,24 @@ choice is final. A successful request does not guarantee metadata exists on a
 selected item. Handle missing or redacted values and read metadata only while
 URI access remains valid. Unsupported devices report `unsupported_feature`.
 
+### UI customization
+
+On devices where `capabilities.supportsEmbeddedUiCustomization` is true,
+customize the media grid and expanded selection bar:
+
+```dart
+final options = EmbeddedPhotoPickerOptions(
+  ui: const EmbeddedPhotoPickerUiOptions(
+    gridAspectRatio: EmbeddedPhotoPickerGridAspectRatio.portrait9By16,
+    selectionBarVisibleInExpandedMode: false,
+  ),
+);
+```
+
+Grid options are the Android default, square 1:1, or portrait 9:16. These
+settings require Android 17.1 or U SDK Extension 23; unsupported devices report
+`unsupported_feature`.
+
 ## Selection and lifecycle
 
 - Grant and revoke callbacks contain changes, not complete selection snapshots.

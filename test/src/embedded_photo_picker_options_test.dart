@@ -14,6 +14,7 @@ void main() {
       'selection': null,
       'navigation': null,
       'requestLocationMetadata': false,
+      'ui': null,
     });
   });
 
@@ -157,6 +158,23 @@ void main() {
       ),
       throwsArgumentError,
     );
+  });
+
+  test('encodes embedded UI customization', () {
+    expect(const EmbeddedPhotoPickerUiOptions().toMap(), {
+      'gridAspectRatio': 'systemDefault',
+      'selectionBarVisibleInExpandedMode': true,
+    });
+
+    const ui = EmbeddedPhotoPickerUiOptions(
+      gridAspectRatio: EmbeddedPhotoPickerGridAspectRatio.portrait9By16,
+      selectionBarVisibleInExpandedMode: false,
+    );
+    expect(ui.toMap(), {
+      'gridAspectRatio': 'portrait9By16',
+      'selectionBarVisibleInExpandedMode': false,
+    });
+    expect(EmbeddedPhotoPickerOptions(ui: ui).toMap()['ui'], ui.toMap());
   });
 
   test('rejects invalid configuration in release builds too', () {

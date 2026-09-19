@@ -54,6 +54,39 @@ enum EmbeddedPhotoPickerHighlightType {
   expanded,
 }
 
+/// Thumbnail aspect ratios supported by the embedded picker media grid.
+enum EmbeddedPhotoPickerGridAspectRatio {
+  /// Let Android use its default grid aspect ratio.
+  systemDefault,
+
+  /// Square 1:1 thumbnails.
+  square,
+
+  /// Portrait 9:16 thumbnails.
+  portrait9By16,
+}
+
+/// Embedded picker UI customization available on U SDK Extension 23+.
+class EmbeddedPhotoPickerUiOptions {
+  /// Creates embedded-specific UI settings.
+  const EmbeddedPhotoPickerUiOptions({
+    this.gridAspectRatio = EmbeddedPhotoPickerGridAspectRatio.systemDefault,
+    this.selectionBarVisibleInExpandedMode = true,
+  });
+
+  /// The aspect ratio used for media grid thumbnails.
+  final EmbeddedPhotoPickerGridAspectRatio gridAspectRatio;
+
+  /// Whether the selection bar is visible while the picker is expanded.
+  final bool selectionBarVisibleInExpandedMode;
+
+  /// Encodes UI settings for the Android view.
+  Map<String, Object?> toMap() => {
+    'gridAspectRatio': gridAspectRatio.name,
+    'selectionBarVisibleInExpandedMode': selectionBarVisibleInExpandedMode,
+  };
+}
+
 /// Initial navigation and highlighted-content settings.
 ///
 /// Album and search highlights require U SDK Extension 19. Expanded highlight
@@ -216,6 +249,7 @@ class EmbeddedPhotoPickerOptions {
     this.selection,
     this.navigation,
     this.requestLocationMetadata = false,
+    this.ui,
   }) : mimeTypes = List.unmodifiable(mimeTypes),
        preselectedUris = List.unmodifiable(preselectedUris) {
     if (maxSelection < 1) {
@@ -282,6 +316,9 @@ class EmbeddedPhotoPickerOptions {
   /// `false`, so location metadata remains redacted.
   final bool requestLocationMetadata;
 
+  /// Embedded-specific grid and selection-bar appearance settings.
+  final EmbeddedPhotoPickerUiOptions? ui;
+
   /// Encodes creation settings for the Android view.
   Map<String, Object?> toMap() => {
     'maxSelection': maxSelection,
@@ -297,5 +334,6 @@ class EmbeddedPhotoPickerOptions {
     'selection': selection?.toMap(),
     'navigation': navigation?.toMap(),
     'requestLocationMetadata': requestLocationMetadata,
+    'ui': ui?.toMap(),
   };
 }

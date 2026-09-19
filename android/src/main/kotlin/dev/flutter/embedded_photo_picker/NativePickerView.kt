@@ -15,6 +15,7 @@ import android.widget.photopicker.EmbeddedPhotoPickerClient
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import android.widget.photopicker.EmbeddedPhotoPickerProviderFactory
 import android.widget.photopicker.EmbeddedPhotoPickerSession
+import android.widget.photopicker.EmbeddedPhotoPickerUiCustomizationParams
 import android.widget.photopicker.PhotoPickerSelectionParams
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
@@ -127,6 +128,17 @@ internal class NativePickerView(
             PickerAvailability.supportsExtension23Features(Build.VERSION.SDK_INT, extension),
         )
         if (requestLocationMetadata) builder.setRequestLocationMetadata(true)
+        val ui = options["ui"] as? Map<*, *>
+        if (ui != null) {
+            validateUiCustomizationSupport(
+                configured = true,
+                supported = PickerAvailability.supportsExtension23Features(
+                    Build.VERSION.SDK_INT,
+                    extension,
+                ),
+            )
+            builder.setEmbeddedUiCustomizationParams(buildUiCustomizationParams(ui))
+        }
         (options["accentColor"] as? Number)?.let { builder.setAccentColor(it.toLong()) }
         val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
@@ -181,6 +193,16 @@ internal class NativePickerView(
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
         return builder.build()
     }
+
+    private fun buildUiCustomizationParams(
+        options: Map<*, *>,
+    ): EmbeddedPhotoPickerUiCustomizationParams =
+        EmbeddedPhotoPickerUiCustomizationParams.Builder()
+            .setAspectRatio(gridAspectRatioValue(options["gridAspectRatio"] as? String))
+            .setSelectionBarVisibleInExpandedMode(
+                options["selectionBarVisibleInExpandedMode"] as? Boolean ?: true,
+            )
+            .build()
 
     @Suppress("DEPRECATION")
     private fun openIfReady() {
@@ -328,6 +350,21 @@ internal fun validateLocationMetadataRequest(requested: Boolean, supported: Bool
             "Location metadata requires Android 17.1 or U SDK Extension 23",
         )
     }
+}
+
+internal fun validateUiCustomizationSupport(configured: Boolean, supported: Boolean) {
+    if (configured && !supported) {
+        throw UnsupportedPickerFeatureException(
+            "Embedded UI customization requires Android 17.1 or U SDK Extension 23",
+        )
+    }
+}
+
+internal fun gridAspectRatioValue(value: String?): Int = when (value) {
+    null, "systemDefault" -> EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_UNDEFINED
+    "square" -> EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_SQUARE_1_1
+    "portrait9By16" -> EmbeddedPhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16
+    else -> throw IllegalArgumentException("Unknown grid aspect ratio: $value")
 }
 
 internal fun hasHighlight(options: Map<*, *>): Boolean =

@@ -9,6 +9,7 @@
 - Add opening-tab selection, album/search highlights, highlight presentation,
 	and collapsed-mode scrolling with feature-level availability checks.
 - Add an explicit, capability-gated opt-in for selected-media location metadata.
+- Add embedded grid aspect-ratio and expanded selection-bar customization.
 - Standalone example and Dart/native tests.
 - Fix native picker taps by placing the child surface above its host window.
 - Apply the requested expanded or collapsed state before opening the session.
