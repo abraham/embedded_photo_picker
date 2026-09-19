@@ -121,6 +121,22 @@ and an initially expanded widget. Launch tabs and collapsed scrolling require
 their corresponding capability flags. Unsupported settings report
 `unsupported_feature`.
 
+### Location metadata
+
+Location metadata is redacted by default. On devices where
+`capabilities.supportsLocationMetadata` is true, request access explicitly:
+
+```dart
+final options = EmbeddedPhotoPickerOptions(
+  requestLocationMetadata: true,
+);
+```
+
+Android may ask the user whether to share location metadata, and the user's
+choice is final. A successful request does not guarantee metadata exists on a
+selected item. Handle missing or redacted values and read metadata only while
+URI access remains valid. Unsupported devices report `unsupported_feature`.
+
 ## Selection and lifecycle
 
 - Grant and revoke callbacks contain changes, not complete selection snapshots.

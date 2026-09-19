@@ -79,6 +79,19 @@ class PickerAvailabilityTest {
         assertEquals("unsupported_feature", UNSUPPORTED_FEATURE_ERROR)
     }
 
+    @Test fun locationMetadataIsOptInAndRequiresExtension23() {
+        validateLocationMetadataRequest(requested = false, supported = false)
+        validateLocationMetadataRequest(requested = true, supported = true)
+        val error = assertThrows(UnsupportedPickerFeatureException::class.java) {
+            validateLocationMetadataRequest(requested = true, supported = false)
+        }
+
+        assertEquals(
+            "Location metadata requires Android 17.1 or U SDK Extension 23",
+            error.message,
+        )
+    }
+
     @Test fun gatesNavigationFeaturesAtTheirOwnExtensionLevels() {
         validateNavigationOptions(
             mapOf("highlightAlbum" to "favorites", "highlightType" to "collapsed"),

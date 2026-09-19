@@ -13,6 +13,7 @@ void main() {
       'orderedSelection': false,
       'selection': null,
       'navigation': null,
+      'requestLocationMetadata': false,
     });
   });
 
@@ -34,6 +35,11 @@ void main() {
     expect(options.toMap()['accentColor'], 0xff777777);
     expect(options.toMap()['themeNightMode'], 0x20);
     expect(options.toMap()['orderedSelection'], isTrue);
+    expect(
+      EmbeddedPhotoPickerOptions(requestLocationMetadata: true)
+          .toMap()['requestLocationMetadata'],
+      isTrue,
+    );
     expect(() => options.mimeTypes.clear(), throwsUnsupportedError);
     expect(
       EmbeddedPhotoPickerOptions(brightness: Brightness.light)

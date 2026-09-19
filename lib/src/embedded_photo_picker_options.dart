@@ -215,6 +215,7 @@ class EmbeddedPhotoPickerOptions {
     this.orderedSelection = false,
     this.selection,
     this.navigation,
+    this.requestLocationMetadata = false,
   }) : mimeTypes = List.unmodifiable(mimeTypes),
        preselectedUris = List.unmodifiable(preselectedUris) {
     if (maxSelection < 1) {
@@ -274,6 +275,13 @@ class EmbeddedPhotoPickerOptions {
   /// Initial tab, highlighted content, and collapsed scrolling settings.
   final EmbeddedPhotoPickerNavigationOptions? navigation;
 
+  /// Whether to ask the user to share location metadata for selected media.
+  ///
+  /// This requires Android 17.1 or U SDK Extension 23 and does not guarantee
+  /// access. Android may ask the user, whose choice is final. The default is
+  /// `false`, so location metadata remains redacted.
+  final bool requestLocationMetadata;
+
   /// Encodes creation settings for the Android view.
   Map<String, Object?> toMap() => {
     'maxSelection': maxSelection,
@@ -288,5 +296,6 @@ class EmbeddedPhotoPickerOptions {
     'orderedSelection': orderedSelection,
     'selection': selection?.toMap(),
     'navigation': navigation?.toMap(),
+    'requestLocationMetadata': requestLocationMetadata,
   };
 }

@@ -121,6 +121,12 @@ internal class NativePickerView(
         if (navigation != null) {
             applyNavigationOptions(builder, navigation, extension)
         }
+        val requestLocationMetadata = options["requestLocationMetadata"] as? Boolean ?: false
+        validateLocationMetadataRequest(
+            requestLocationMetadata,
+            PickerAvailability.supportsExtension23Features(Build.VERSION.SDK_INT, extension),
+        )
+        if (requestLocationMetadata) builder.setRequestLocationMetadata(true)
         (options["accentColor"] as? Number)?.let { builder.setAccentColor(it.toLong()) }
         val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
@@ -312,6 +318,14 @@ internal fun validateSelectionConstraintsSupport(options: Map<*, *>, supported: 
     if (hasSelectionConstraints(options) && !supported) {
         throw UnsupportedPickerFeatureException(
             "Selection constraints require Android 17 or U SDK Extension 22",
+        )
+    }
+}
+
+internal fun validateLocationMetadataRequest(requested: Boolean, supported: Boolean) {
+    if (requested && !supported) {
+        throw UnsupportedPickerFeatureException(
+            "Location metadata requires Android 17.1 or U SDK Extension 23",
         )
     }
 }
