@@ -1,0 +1,16 @@
+name: embedded_photo_picker_example
+description: Standalone Android embedded photo picker demonstration.
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: ^3.13.0
+dependencies:
+  flutter:
+    sdk: flutter
+  embedded_photo_picker:
+    path: ../
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true

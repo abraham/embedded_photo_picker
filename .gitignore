@@ -1,0 +1,13 @@
+.dart_tool/
+.flutter-plugins*
+.idea/
+.vscode/
+.widget_preview/
+build/
+coverage/
+doc/api/
+pubspec.lock
+*.iml
+*.log
+.DS_Store
+local.properties

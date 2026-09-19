@@ -1,0 +1,24 @@
+name: embedded_photo_picker
+description: Embed Android's system photo picker in Flutter with selection callbacks, runtime availability checks, and content URI thumbnails.
+version: 0.1.0
+repository: https://github.com/abraham/embedded_photo_picker
+issue_tracker: https://github.com/abraham/embedded_photo_picker/issues
+topics:
+  - android
+  - photo-picker
+  - images
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.44.0'
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.flutter.embedded_photo_picker
+        pluginClass: EmbeddedPhotoPickerPlugin
