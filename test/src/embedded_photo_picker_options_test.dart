@@ -12,6 +12,7 @@ void main() {
       'themeNightMode': 0,
       'orderedSelection': false,
       'selection': null,
+      'navigation': null,
     });
   });
 
@@ -102,6 +103,52 @@ void main() {
     );
     expect(
       () => EmbeddedPhotoPickerSelectionOptions(mimeTypes: ['text/plain']),
+      throwsArgumentError,
+    );
+  });
+
+  test('encodes navigation and discovery settings', () {
+    final navigation = EmbeddedPhotoPickerNavigationOptions(
+      launchTab: EmbeddedPhotoPickerLaunchTab.collections,
+      highlightAlbum: EmbeddedPhotoPickerHighlightAlbum.favorites,
+      highlightType: EmbeddedPhotoPickerHighlightType.expanded,
+      collapsedModeScrollingEnabled: true,
+    );
+
+    expect(navigation.toMap(), {
+      'launchTab': 'collections',
+      'highlightAlbum': 'favorites',
+      'highlightSearchQuery': null,
+      'highlightType': 'expanded',
+      'collapsedModeScrollingEnabled': true,
+    });
+    expect(
+      EmbeddedPhotoPickerOptions(navigation: navigation).toMap()['navigation'],
+      navigation.toMap(),
+    );
+    expect(
+      EmbeddedPhotoPickerNavigationOptions(highlightSearchQuery: 'receipts')
+          .toMap()['highlightSearchQuery'],
+      'receipts',
+    );
+  });
+
+  test('rejects invalid navigation settings', () {
+    expect(
+      () => EmbeddedPhotoPickerNavigationOptions(
+        highlightAlbum: EmbeddedPhotoPickerHighlightAlbum.camera,
+        highlightSearchQuery: 'vacation',
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerNavigationOptions(highlightSearchQuery: '   '),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerNavigationOptions(
+        highlightType: EmbeddedPhotoPickerHighlightType.expanded,
+      ),
       throwsArgumentError,
     );
   });

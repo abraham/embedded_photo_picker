@@ -98,6 +98,29 @@ constraints. On older devices, the session reports `unsupported_feature` rather
 than silently ignoring them. Top-level `mimeTypes` hide unmatched media;
 selection constraint MIME types leave unmatched media visible but disabled.
 
+### Navigation and highlights
+
+Choose the opening tab, highlight an album or search, and optionally enable
+scrolling while collapsed:
+
+```dart
+final options = EmbeddedPhotoPickerOptions(
+  navigation: EmbeddedPhotoPickerNavigationOptions(
+    launchTab: EmbeddedPhotoPickerLaunchTab.collections,
+    highlightAlbum: EmbeddedPhotoPickerHighlightAlbum.favorites,
+    highlightType: EmbeddedPhotoPickerHighlightType.collapsed,
+    collapsedModeScrollingEnabled: true,
+  ),
+);
+```
+
+Use `highlightSearchQuery` instead of `highlightAlbum` to highlight search
+results. Album/search highlights require `supportsHighlights`; expanded
+highlight presentation additionally requires `supportsInitialExpandedState`
+and an initially expanded widget. Launch tabs and collapsed scrolling require
+their corresponding capability flags. Unsupported settings report
+`unsupported_feature`.
+
 ## Selection and lifecycle
 
 - Grant and revoke callbacks contain changes, not complete selection snapshots.

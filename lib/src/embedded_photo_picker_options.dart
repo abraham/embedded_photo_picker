@@ -16,6 +16,102 @@ void _checkPositive(int? value, String argumentName) {
   }
 }
 
+/// The tab displayed when the embedded picker first opens.
+enum EmbeddedPhotoPickerLaunchTab {
+  /// The Photos tab.
+  photos,
+
+  /// The Collections tab.
+  collections,
+}
+
+/// A system collection whose media should be highlighted.
+enum EmbeddedPhotoPickerHighlightAlbum {
+  /// Media marked as favorite.
+  favorites,
+
+  /// Media captured by the camera.
+  camera,
+
+  /// Screenshots.
+  screenshots,
+
+  /// Videos.
+  videos,
+
+  /// Downloaded media.
+  downloads,
+}
+
+/// How highlighted media is presented when the picker opens.
+enum EmbeddedPhotoPickerHighlightType {
+  /// A highlighted section within the regular picker.
+  collapsed,
+
+  /// A full highlighted-results grid.
+  ///
+  /// The [EmbeddedPhotoPicker] widget must initially have `expanded: true`.
+  expanded,
+}
+
+/// Initial navigation and highlighted-content settings.
+///
+/// Album and search highlights require U SDK Extension 19. Expanded highlight
+/// presentation requires Extension 21. [launchTab] and
+/// [collapsedModeScrollingEnabled] require Extension 23.
+class EmbeddedPhotoPickerNavigationOptions {
+  /// Creates navigation settings, rejecting conflicting or empty highlights.
+  EmbeddedPhotoPickerNavigationOptions({
+    this.launchTab,
+    this.highlightAlbum,
+    this.highlightSearchQuery,
+    this.highlightType = EmbeddedPhotoPickerHighlightType.collapsed,
+    this.collapsedModeScrollingEnabled,
+  }) {
+    if (highlightAlbum != null && highlightSearchQuery != null) {
+      throw ArgumentError(
+        'Only one of highlightAlbum or highlightSearchQuery may be set',
+      );
+    }
+    if (highlightSearchQuery != null && highlightSearchQuery!.trim().isEmpty) {
+      throw ArgumentError.value(
+        highlightSearchQuery,
+        'highlightSearchQuery',
+        'Must not be empty',
+      );
+    }
+    if (highlightAlbum == null &&
+        highlightSearchQuery == null &&
+        highlightType != EmbeddedPhotoPickerHighlightType.collapsed) {
+      throw ArgumentError('A highlight source is required for highlightType');
+    }
+  }
+
+  /// The tab shown when the picker first opens, or `null` for Android's default.
+  final EmbeddedPhotoPickerLaunchTab? launchTab;
+
+  /// A system collection to highlight.
+  final EmbeddedPhotoPickerHighlightAlbum? highlightAlbum;
+
+  /// A text query whose matching media should be highlighted.
+  final String? highlightSearchQuery;
+
+  /// Whether highlights appear as a section or a full results grid.
+  final EmbeddedPhotoPickerHighlightType highlightType;
+
+  /// Whether the collapsed picker can scroll, or `null` for Android's default.
+  final bool? collapsedModeScrollingEnabled;
+
+  /// Encodes navigation settings for the Android view.
+  Map<String, Object?> toMap() => {
+    'launchTab': launchTab?.name,
+    'highlightAlbum': highlightAlbum?.name,
+    'highlightSearchQuery': highlightSearchQuery,
+    'highlightType': highlightType.name,
+    'collapsedModeScrollingEnabled': collapsedModeScrollingEnabled,
+  };
+}
+
 /// Constraints that disable media which the host application cannot accept.
 ///
 /// Requires Android 17/API 37 or U SDK Extension 22. Unlike [mimeTypes] on
@@ -118,6 +214,7 @@ class EmbeddedPhotoPickerOptions {
     this.brightness,
     this.orderedSelection = false,
     this.selection,
+    this.navigation,
   }) : mimeTypes = List.unmodifiable(mimeTypes),
        preselectedUris = List.unmodifiable(preselectedUris) {
     if (maxSelection < 1) {
@@ -174,6 +271,9 @@ class EmbeddedPhotoPickerOptions {
   /// Constraints for media that can be selected, when supported by Android.
   final EmbeddedPhotoPickerSelectionOptions? selection;
 
+  /// Initial tab, highlighted content, and collapsed scrolling settings.
+  final EmbeddedPhotoPickerNavigationOptions? navigation;
+
   /// Encodes creation settings for the Android view.
   Map<String, Object?> toMap() => {
     'maxSelection': maxSelection,
@@ -187,5 +287,6 @@ class EmbeddedPhotoPickerOptions {
     },
     'orderedSelection': orderedSelection,
     'selection': selection?.toMap(),
+    'navigation': navigation?.toMap(),
   };
 }

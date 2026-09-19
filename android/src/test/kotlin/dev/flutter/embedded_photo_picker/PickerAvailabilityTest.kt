@@ -1,5 +1,7 @@
 package dev.flutter.embedded_photo_picker
 
+import android.provider.MediaStore
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -75,5 +77,60 @@ class PickerAvailabilityTest {
             error.message,
         )
         assertEquals("unsupported_feature", UNSUPPORTED_FEATURE_ERROR)
+    }
+
+    @Test fun gatesNavigationFeaturesAtTheirOwnExtensionLevels() {
+        validateNavigationOptions(
+            mapOf("highlightAlbum" to "favorites", "highlightType" to "collapsed"),
+            sdk = 34,
+            extension = 19,
+            initialExpanded = false,
+        )
+        assertThrows(UnsupportedPickerFeatureException::class.java) {
+            validateNavigationOptions(
+                mapOf("highlightSearchQuery" to "receipts"),
+                sdk = 34,
+                extension = 18,
+                initialExpanded = true,
+            )
+        }
+        assertThrows(UnsupportedPickerFeatureException::class.java) {
+            validateNavigationOptions(
+                mapOf("launchTab" to "collections"),
+                sdk = 35,
+                extension = 22,
+                initialExpanded = true,
+            )
+        }
+        validateNavigationOptions(
+            mapOf("launchTab" to "collections", "collapsedModeScrollingEnabled" to true),
+            sdk = 35,
+            extension = 23,
+            initialExpanded = true,
+        )
+    }
+
+    @Test fun expandedHighlightsRequireSupportAndExpandedLaunch() {
+        val options = mapOf("highlightAlbum" to "camera", "highlightType" to "expanded")
+        assertThrows(UnsupportedPickerFeatureException::class.java) {
+            validateNavigationOptions(options, sdk = 34, extension = 20, initialExpanded = true)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            validateNavigationOptions(options, sdk = 34, extension = 21, initialExpanded = false)
+        }
+        validateNavigationOptions(options, sdk = 34, extension = 21, initialExpanded = true)
+    }
+
+    @Test fun mapsNavigationEnumsToFrameworkConstants() {
+        assertEquals(EmbeddedPhotoPickerFeatureInfo.TAB_IMAGES, launchTabValue("photos"))
+        assertEquals(EmbeddedPhotoPickerFeatureInfo.TAB_ALBUMS, launchTabValue("collections"))
+        assertEquals(
+            MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED,
+            highlightTypeValue("expanded"),
+        )
+        assertEquals(
+            MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_SCREENSHOTS,
+            highlightAlbumValue("screenshots"),
+        )
     }
 }

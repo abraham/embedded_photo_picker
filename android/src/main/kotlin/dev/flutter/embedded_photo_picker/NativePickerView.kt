@@ -117,10 +117,38 @@ internal class NativePickerView(
         if (selection != null && hasSelectionConstraints(selection)) {
             builder.setSelectionParams(buildSelectionParams(selection))
         }
+        val navigation = options["navigation"] as? Map<*, *>
+        if (navigation != null) {
+            applyNavigationOptions(builder, navigation, extension)
+        }
         (options["accentColor"] as? Number)?.let { builder.setAccentColor(it.toLong()) }
         val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
         return builder.build()
+    }
+
+    private fun applyNavigationOptions(
+        builder: EmbeddedPhotoPickerFeatureInfo.Builder,
+        options: Map<*, *>,
+        extension: Int,
+    ) {
+        validateNavigationOptions(options, Build.VERSION.SDK_INT, extension, expanded)
+        (options["highlightAlbum"] as? String)?.let {
+            builder.setHighlightAlbumId(highlightAlbumValue(it))
+        }
+        (options["highlightSearchQuery"] as? String)?.let {
+            builder.setHighlightSearchMediaTextQuery(it)
+        }
+        if (hasHighlight(options) &&
+            PickerAvailability.supportsInitialExpandedState(Build.VERSION.SDK_INT, extension)) {
+            builder.setHighlightType(highlightTypeValue(options["highlightType"] as? String))
+        }
+        (options["launchTab"] as? String)?.let {
+            builder.setLaunchTab(launchTabValue(it))
+        }
+        (options["collapsedModeScrollingEnabled"] as? Boolean)?.let {
+            builder.setCollapsedModeScrollingEnabled(it)
+        }
     }
 
     private fun buildSelectionParams(options: Map<*, *>): PhotoPickerSelectionParams {
@@ -286,4 +314,58 @@ internal fun validateSelectionConstraintsSupport(options: Map<*, *>, supported: 
             "Selection constraints require Android 17 or U SDK Extension 22",
         )
     }
+}
+
+internal fun hasHighlight(options: Map<*, *>): Boolean =
+    options["highlightAlbum"] != null || options["highlightSearchQuery"] != null
+
+internal fun validateNavigationOptions(
+    options: Map<*, *>,
+    sdk: Int,
+    extension: Int,
+    initialExpanded: Boolean,
+) {
+    val hasAlbum = options["highlightAlbum"] != null
+    val hasQuery = options["highlightSearchQuery"] != null
+    require(!(hasAlbum && hasQuery)) { "Only one highlight source may be set" }
+    if ((hasAlbum || hasQuery) && !PickerAvailability.supportsHighlights(sdk, extension)) {
+        throw UnsupportedPickerFeatureException(
+            "Highlights require Android 17 or U SDK Extension 19",
+        )
+    }
+    if (hasHighlight(options) && options["highlightType"] == "expanded") {
+        if (!PickerAvailability.supportsInitialExpandedState(sdk, extension)) {
+            throw UnsupportedPickerFeatureException(
+                "Expanded highlights require Android 17 or U SDK Extension 21",
+            )
+        }
+        require(initialExpanded) { "Expanded highlights require an initially expanded picker" }
+    }
+    if ((options["launchTab"] != null || options["collapsedModeScrollingEnabled"] != null) &&
+        !PickerAvailability.supportsExtension23Features(sdk, extension)) {
+        throw UnsupportedPickerFeatureException(
+            "Launch tab and collapsed scrolling require Android 17.1 or U SDK Extension 23",
+        )
+    }
+}
+
+internal fun launchTabValue(value: String): Int = when (value) {
+    "photos" -> EmbeddedPhotoPickerFeatureInfo.TAB_IMAGES
+    "collections" -> EmbeddedPhotoPickerFeatureInfo.TAB_ALBUMS
+    else -> throw IllegalArgumentException("Unknown launch tab: $value")
+}
+
+internal fun highlightTypeValue(value: String?): Int = when (value) {
+    null, "collapsed" -> MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_COLLAPSED
+    "expanded" -> MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED
+    else -> throw IllegalArgumentException("Unknown highlight type: $value")
+}
+
+internal fun highlightAlbumValue(value: String): String = when (value) {
+    "favorites" -> MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES
+    "camera" -> MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_CAMERA
+    "screenshots" -> MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_SCREENSHOTS
+    "videos" -> MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_VIDEOS
+    "downloads" -> MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_DOWNLOADS
+    else -> throw IllegalArgumentException("Unknown highlight album: $value")
 }
