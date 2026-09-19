@@ -73,6 +73,46 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
+  testWidgets('reports unsupported feature errors and displays fallback', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    messenger.setMockMethodCallHandler(channel, (_) async => true);
+    final errors = <PlatformException>[];
+    MethodChannel? viewChannel;
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (
+      call,
+    ) async {
+      if (call.method == 'create') {
+        final arguments = call.arguments as Map;
+        viewChannel = MethodChannel(
+          'embedded_photo_picker/view/${arguments['id']}',
+        );
+        messenger.setMockMethodCallHandler(viewChannel!, (_) async => null);
+      }
+      return null;
+    });
+
+    await tester.pumpWidget(picker(onError: errors.add));
+    await tester.pumpAndSettle();
+    await messenger.handlePlatformMessage(
+      viewChannel!.name,
+      const StandardMethodCodec().encodeMethodCall(
+        const MethodCall('error', {
+          'code': 'unsupported_feature',
+          'message': 'Requires a newer SDK extension',
+        }),
+      ),
+      (_) {},
+    );
+    await tester.pumpAndSettle();
+
+    expect(errors.single.code, 'unsupported_feature');
+    expect(find.text('Unavailable'), findsOneWidget);
+    messenger.setMockMethodCallHandler(viewChannel!, null);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('creates hybrid view, delivers events, and disposes on failure', (
     tester,
   ) async {

@@ -5,6 +5,7 @@ import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import android.widget.photopicker.EmbeddedPhotoPickerUiCustomizationParams
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -174,5 +175,50 @@ class PickerAvailabilityTest {
             MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_SCREENSHOTS,
             highlightAlbumValue("screenshots"),
         )
+    }
+
+    @Test fun parsesCompleteFeatureRequestWithVersionPolicy() {
+        val options = mapOf(
+            "maxSelection" to 4,
+            "orderedSelection" to true,
+            "themeNightMode" to 0x20,
+            "accentColor" to 0xff777777L,
+            "mimeTypes" to listOf("image/jpeg"),
+            "selection" to mapOf("maxMediaItemSizeInBytes" to 1000L),
+            "navigation" to mapOf("launchTab" to "photos"),
+            "requestLocationMetadata" to true,
+            "ui" to mapOf("gridAspectRatio" to "square"),
+        )
+        val request = parsePickerFeatureRequest(
+            options = options,
+            selectedUris = listOf("content://media/1"),
+            sdk = 37,
+            extension = 23,
+            expanded = false,
+            deviceMaxSelection = 150,
+        )
+
+        assertEquals(4, request.maxSelection)
+        assertTrue(request.orderedSelection)
+        assertEquals(0x20, request.themeNightMode)
+        assertEquals(listOf("content://media/1"), request.preselectedUris)
+        assertEquals(0xff777777L, request.accentColor)
+        assertEquals(listOf("image/jpeg"), request.mimeTypes)
+        assertFalse(request.initialExpanded!!)
+        assertTrue(request.requestLocationMetadata)
+        assertEquals(options["selection"], request.selection)
+        assertEquals(options["navigation"], request.navigation)
+        assertEquals(options["ui"], request.ui)
+
+        val baseline = parsePickerFeatureRequest(
+            options = mapOf("maxSelection" to 1),
+            selectedUris = emptyList(),
+            sdk = 34,
+            extension = 15,
+            expanded = true,
+            deviceMaxSelection = 150,
+        )
+        assertNull(baseline.initialExpanded)
+        assertFalse(baseline.requestLocationMetadata)
     }
 }
