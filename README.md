@@ -4,8 +4,14 @@ Embed Android's system photo picker directly in a Flutter layout. The plugin
 supports continuous selection, runtime support checks, advanced filtering, and
 image/video thumbnails without broad gallery permissions.
 
+> [!NOTE]
 > This integration is experimental. Validate rendering, accessibility, cloud
 > media, and OEM behavior on your target devices before production use.
+
+| Collapsed picker | Expanded picker | Selected media |
+| --- | --- | --- |
+| ![Collapsed system photo picker embedded below a chat composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/chat-collapsed.png?raw=true) | ![Expanded system photo picker embedded below a chat composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/chat-expanded.png?raw=true) | ![Selected media in system photo picker embedded below a chat composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/chat-selected.png?raw=true) |
+| ![Collapsed system photo picker embedded below a message composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/compose-collapsed.png?raw=true) | ![Expanded system photo picker embedded below a message composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/compose-expanded.png?raw=true) | ![Selected media in system photo picker embedded below a message composer](https://github.com/abraham/embedded_photo_picker/blob/main/doc/screenshots/compose-selected.png?raw=true) |
 
 ## Requirements
 
@@ -46,7 +52,7 @@ or externally added selection changes.
 
 ## Configuration
 
-Common options stay flat and typed:
+Common options:
 
 ```dart
 final config = PickerConfig(
