@@ -90,6 +90,10 @@ void main() {
       if (call.method == 'create') {
         final arguments = call.arguments as Map;
         expect(arguments['hybrid'], isTrue);
+        final params = const StandardMessageCodec().decodeMessage(
+          ByteData.sublistView(arguments['params'] as Uint8List),
+        ) as Map;
+        expect(params['initialExpanded'], isFalse);
         viewChannel = MethodChannel(
           'embedded_photo_picker/view/${arguments['id']}',
         );
@@ -117,6 +121,7 @@ void main() {
           height: 400,
           child: EmbeddedPhotoPicker(
             options: EmbeddedPhotoPickerOptions(maxSelection: 3),
+            expanded: false,
             onReady: (controller) => readyController = controller,
             onUrisGranted: events.add,
             onUrisRevoked: events.add,
@@ -137,6 +142,7 @@ void main() {
       'setExpanded',
       'setVisible',
     ]);
+    expect(commands[1].arguments, isFalse);
     await event('granted', ['content://media/1']);
     await event('revoked', ['content://media/1']);
     await event('complete');

@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.ext.SdkExtensions
 import android.provider.MediaStore
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -35,7 +37,7 @@ internal class NativePickerView(
     private var surfaceReady = false
     private var opening = false
     private var generation = 0
-    private var expanded = true
+    private var expanded = readInitialExpanded(options)
     private var hostVisible = true
     private val selected = LinkedHashSet<Uri>()
     private val timeout = Runnable { fail("session_timeout", "Photo picker did not open") }
@@ -96,6 +98,12 @@ internal class NativePickerView(
             .setOrderedSelection(options["orderedSelection"] as? Boolean ?: false)
             .setThemeNightMode((options["themeNightMode"] as? Number)?.toInt() ?: 0)
             .setPreSelectedUris(selected.toList())
+        val extension = if (Build.VERSION.SDK_INT >= 34) {
+            SdkExtensions.getExtensionVersion(34)
+        } else 0
+        if (PickerAvailability.supportsInitialExpandedState(Build.VERSION.SDK_INT, extension)) {
+            builder.setPickerLaunchedInExpandedState(expanded)
+        }
         (options["accentColor"] as? Number)?.let { builder.setAccentColor(it.toLong()) }
         val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
@@ -225,3 +233,6 @@ internal class NativePickerView(
         onDisposed(this)
     }
 }
+
+internal fun readInitialExpanded(options: Map<*, *>): Boolean =
+    options["initialExpanded"] as? Boolean ?: true

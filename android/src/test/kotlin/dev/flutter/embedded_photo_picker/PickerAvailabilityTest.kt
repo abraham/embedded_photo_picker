@@ -16,4 +16,18 @@ class PickerAvailabilityTest {
         assertTrue(PickerAvailability.supportsApi(36, 0))
         assertTrue(PickerAvailability.supportsApi(37, 0))
     }
+
+    @Test fun gatesInitialExpandedFeature() {
+        assertFalse(PickerAvailability.supportsInitialExpandedState(33, 21))
+        assertFalse(PickerAvailability.supportsInitialExpandedState(34, 20))
+        assertTrue(PickerAvailability.supportsInitialExpandedState(34, 21))
+        assertTrue(PickerAvailability.supportsInitialExpandedState(36, 21))
+        assertTrue(PickerAvailability.supportsInitialExpandedState(37, 0))
+    }
+
+    @Test fun readsInitialExpandedCreationParameter() {
+        assertFalse(readInitialExpanded(mapOf("initialExpanded" to false)))
+        assertTrue(readInitialExpanded(mapOf("initialExpanded" to true)))
+        assertTrue(readInitialExpanded(emptyMap<Any, Any>()))
+    }
 }

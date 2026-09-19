@@ -5,6 +5,7 @@
 - Creation-time selection limits, MIME filters, preselection, accent, and theme.
 - Standalone example and Dart/native tests.
 - Fix native picker taps by placing the child surface above its host window.
+- Apply the requested expanded or collapsed state before opening the session.
 - Add `EmbeddedPhotoPickerMedia.loadThumbnail` for bounded image/video PNG
 	thumbnails, with background loading and cleanup on engine detachment.
 - Demonstrate horizontal previews, removal, and host-owned slide transitions

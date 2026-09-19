@@ -11,3 +11,4 @@ pubspec.lock
 *.log
 .DS_Store
 local.properties
+*.todo.md

@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.flutter.embedded_photo_picker_example"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

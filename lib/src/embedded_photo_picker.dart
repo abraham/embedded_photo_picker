@@ -175,11 +175,15 @@ class _EmbeddedPhotoPickerState extends State<EmbeddedPhotoPicker> {
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
       ),
       onCreatePlatformView: (params) {
+        final creationParams = {
+          ..._options.toMap(),
+          'initialExpanded': widget.expanded,
+        };
         final controller = PlatformViewsService.initExpensiveAndroidView(
           id: params.id,
           viewType: 'embedded_photo_picker/view',
           layoutDirection: Directionality.of(context),
-          creationParams: _options.toMap(),
+          creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
           onFocus: () => params.onFocusChanged(true),
         );

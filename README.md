@@ -9,7 +9,7 @@ thumbnails without requesting broad gallery permissions.
 
 ## Requirements
 
-- Flutter 3.44+, Dart 3.13+, Java 17, and Android compile SDK 36+
+- Flutter 3.44+, Dart 3.13+, Java 17, and Android compile SDK 37+
 - App minSdk 23+
 - Android 16/API 36+, or Android 14/15 with U SDK Extension 15+
 - An installed embedded picker service
@@ -22,7 +22,7 @@ Unsupported devices and non-Android platforms render the supplied fallback.
 flutter pub add embedded_photo_picker
 ```
 
-Set your Android app's `compileSdk` to at least 36, then add a bounded picker:
+Set your Android app's `compileSdk` to at least 37, then add a bounded picker:
 
 ```dart
 import 'package:embedded_photo_picker/embedded_photo_picker.dart';
