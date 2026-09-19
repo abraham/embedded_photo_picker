@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'embedded_photo_picker_capabilities.dart';
+
 /// Commands and events for one native picker view.
 ///
 /// The widget owns this controller. Commands require an open session and throw
 /// [PlatformException] if Android cannot complete them. URIs are not file paths.
 class EmbeddedPhotoPickerController {
+  static const _pluginChannel = MethodChannel('embedded_photo_picker');
+
   /// Connects to a platform view; normally created by the picker widget.
   @internal
   EmbeddedPhotoPickerController(
@@ -44,11 +48,26 @@ class EmbeddedPhotoPickerController {
   static Future<bool> isAvailable() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
     try {
-      return await const MethodChannel('embedded_photo_picker')
-              .invokeMethod<bool>('isAvailable') ??
-          false;
+      return await _pluginChannel.invokeMethod<bool>('isAvailable') ?? false;
     } on MissingPluginException {
       return false;
+    }
+  }
+
+  /// Reports optional embedded picker features available on this device.
+  static Future<EmbeddedPhotoPickerCapabilities> getCapabilities() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return EmbeddedPhotoPickerCapabilities.unavailable;
+    }
+    try {
+      final result = await _pluginChannel.invokeMapMethod<Object?, Object?>(
+        'getCapabilities',
+      );
+      return result == null
+          ? EmbeddedPhotoPickerCapabilities.unavailable
+          : EmbeddedPhotoPickerCapabilities.fromMap(result);
+    } on MissingPluginException {
+      return EmbeddedPhotoPickerCapabilities.unavailable;
     }
   }
 

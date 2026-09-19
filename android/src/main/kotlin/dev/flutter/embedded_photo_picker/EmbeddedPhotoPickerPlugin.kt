@@ -3,7 +3,6 @@ package dev.flutter.embedded_photo_picker
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.ext.SdkExtensions
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.StandardMessageCodec
@@ -19,10 +18,10 @@ class EmbeddedPhotoPickerPlugin : FlutterPlugin {
         thumbnails = ThumbnailChannel(binding.applicationContext, binding.binaryMessenger)
         channel = MethodChannel(binding.binaryMessenger, "embedded_photo_picker").also {
             it.setMethodCallHandler { call, result ->
-                if (call.method == "isAvailable") {
-                    result.success(isAvailable(binding.applicationContext))
-                } else {
-                    result.notImplemented()
+                when (call.method) {
+                    "isAvailable" -> result.success(isAvailable(binding.applicationContext))
+                    "getCapabilities" -> result.success(capabilities(binding.applicationContext))
+                    else -> result.notImplemented()
                 }
             }
         }
@@ -49,11 +48,15 @@ class EmbeddedPhotoPickerPlugin : FlutterPlugin {
     }
 
     private fun isAvailable(context: Context): Boolean {
-        val extension = if (Build.VERSION.SDK_INT >= 34) {
-            SdkExtensions.getExtensionVersion(34)
-        } else 0
+        val extension = PickerAvailability.currentExtensionVersion()
         if (!PickerAvailability.supportsApi(Build.VERSION.SDK_INT, extension)) return false
         val intent = Intent("com.android.photopicker.core.embedded.EmbeddedService.BIND")
         return context.packageManager.queryIntentServices(intent, 0).isNotEmpty()
+    }
+
+    private fun capabilities(context: Context): Map<String, Any> {
+        val sdk = Build.VERSION.SDK_INT
+        val extension = PickerAvailability.currentExtensionVersion(sdk)
+        return PickerAvailability.toMap(sdk, extension, isAvailable(context))
     }
 }

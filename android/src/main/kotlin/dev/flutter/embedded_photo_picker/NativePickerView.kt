@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.ext.SdkExtensions
 import android.provider.MediaStore
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -16,10 +15,16 @@ import android.widget.photopicker.EmbeddedPhotoPickerClient
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo
 import android.widget.photopicker.EmbeddedPhotoPickerProviderFactory
 import android.widget.photopicker.EmbeddedPhotoPickerSession
+import android.widget.photopicker.PhotoPickerSelectionParams
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import java.time.Duration
+
+internal const val UNSUPPORTED_FEATURE_ERROR = "unsupported_feature"
+
+internal class UnsupportedPickerFeatureException(message: String) : IllegalArgumentException(message)
 
 @SuppressLint("NewApi")
 internal class NativePickerView(
@@ -98,13 +103,46 @@ internal class NativePickerView(
             .setOrderedSelection(options["orderedSelection"] as? Boolean ?: false)
             .setThemeNightMode((options["themeNightMode"] as? Number)?.toInt() ?: 0)
             .setPreSelectedUris(selected.toList())
-        val extension = if (Build.VERSION.SDK_INT >= 34) {
-            SdkExtensions.getExtensionVersion(34)
-        } else 0
+        val extension = PickerAvailability.currentExtensionVersion()
         if (PickerAvailability.supportsInitialExpandedState(Build.VERSION.SDK_INT, extension)) {
             builder.setPickerLaunchedInExpandedState(expanded)
         }
+        val selection = options["selection"] as? Map<*, *>
+        if (selection != null) {
+            validateSelectionConstraintsSupport(
+                selection,
+                PickerAvailability.supportsSelectionConstraints(Build.VERSION.SDK_INT, extension),
+            )
+        }
+        if (selection != null && hasSelectionConstraints(selection)) {
+            builder.setSelectionParams(buildSelectionParams(selection))
+        }
         (options["accentColor"] as? Number)?.let { builder.setAccentColor(it.toLong()) }
+        val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
+        if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
+        return builder.build()
+    }
+
+    private fun buildSelectionParams(options: Map<*, *>): PhotoPickerSelectionParams {
+        val builder = PhotoPickerSelectionParams.Builder()
+        (options["minMediaItemResolutionInPixels"] as? Number)?.let {
+            builder.setMinMediaItemResolutionInPixels(it.toLong())
+        }
+        (options["maxMediaItemResolutionInPixels"] as? Number)?.let {
+            builder.setMaxMediaItemResolutionInPixels(it.toLong())
+        }
+        (options["maxMediaItemSizeInBytes"] as? Number)?.let {
+            builder.setMaxMediaItemSizeInBytes(it.toLong())
+        }
+        (options["maxSelectionBatchSizeInBytes"] as? Number)?.let {
+            builder.setMaxSelectionBatchSizeInBytes(it.toLong())
+        }
+        (options["minVideoDurationMillis"] as? Number)?.let {
+            builder.setMinVideoDuration(Duration.ofMillis(it.toLong()))
+        }
+        (options["maxVideoDurationMillis"] as? Number)?.let {
+            builder.setMaxVideoDuration(Duration.ofMillis(it.toLong()))
+        }
         val mimeTypes = (options["mimeTypes"] as? List<*>)?.map { it as String }.orEmpty()
         if (mimeTypes.isNotEmpty()) builder.setMimeTypes(mimeTypes)
         return builder.build()
@@ -163,6 +201,8 @@ internal class NativePickerView(
                     }
                 },
             )
+        } catch (error: UnsupportedPickerFeatureException) {
+            fail(UNSUPPORTED_FEATURE_ERROR, error.message)
         } catch (error: Exception) {
             fail("session_error", error.message)
         }
@@ -236,3 +276,14 @@ internal class NativePickerView(
 
 internal fun readInitialExpanded(options: Map<*, *>): Boolean =
     options["initialExpanded"] as? Boolean ?: true
+
+internal fun hasSelectionConstraints(options: Map<*, *>): Boolean =
+    options.any { (_, value) -> value != null && (value !is List<*> || value.isNotEmpty()) }
+
+internal fun validateSelectionConstraintsSupport(options: Map<*, *>, supported: Boolean) {
+    if (hasSelectionConstraints(options) && !supported) {
+        throw UnsupportedPickerFeatureException(
+            "Selection constraints require Android 17 or U SDK Extension 22",
+        )
+    }
+}

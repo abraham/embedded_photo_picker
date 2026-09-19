@@ -9,7 +9,8 @@ thumbnails without requesting broad gallery permissions.
 
 ## Requirements
 
-- Flutter 3.44+, Dart 3.13+, Java 17, and Android compile SDK 37+
+- Flutter 3.44+, Dart 3.13+, Java 17, and Android compile SDK 37.1+
+- Android Gradle Plugin 9.3.3+ and Gradle 9.5+
 - App minSdk 23+
 - Android 16/API 36+, or Android 14/15 with U SDK Extension 15+
 - An installed embedded picker service
@@ -22,7 +23,19 @@ Unsupported devices and non-Android platforms render the supplied fallback.
 flutter pub add embedded_photo_picker
 ```
 
-Set your Android app's `compileSdk` to at least 37, then add a bounded picker:
+Set your Android app's compile SDK in `build.gradle.kts`:
+
+```kotlin
+android {
+  compileSdk {
+    version = release(37) {
+      minorApiLevel = 1
+    }
+  }
+}
+```
+
+Then add a bounded picker:
 
 ```dart
 import 'package:embedded_photo_picker/embedded_photo_picker.dart';
@@ -54,6 +67,36 @@ final available = await EmbeddedPhotoPickerController.isAvailable();
 
 The plugin does not open a classic picker when the embedded picker is
 unavailable.
+
+For features introduced after the base API, inspect the device first:
+
+```dart
+final capabilities =
+    await EmbeddedPhotoPickerController.getCapabilities();
+```
+
+### Selection constraints
+
+Android 17/API 37 and Android 14+ with U SDK Extension 22 can disable media that
+does not meet host requirements:
+
+```dart
+final options = EmbeddedPhotoPickerOptions(
+  maxSelection: 4,
+  selection: EmbeddedPhotoPickerSelectionOptions(
+    maxMediaItemSizeInBytes: 10 * 1024 * 1024,
+    maxSelectionBatchSizeInBytes: 25 * 1024 * 1024,
+    minMediaItemResolutionInPixels: 1_000_000,
+    maxVideoDuration: const Duration(minutes: 2),
+    mimeTypes: ['image/jpeg', 'video/mp4'],
+  ),
+);
+```
+
+Check `capabilities.supportsSelectionConstraints` before using non-empty
+constraints. On older devices, the session reports `unsupported_feature` rather
+than silently ignoring them. Top-level `mimeTypes` hide unmatched media;
+selection constraint MIME types leave unmatched media visible but disabled.
 
 ## Selection and lifecycle
 

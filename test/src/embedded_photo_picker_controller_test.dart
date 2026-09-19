@@ -47,6 +47,41 @@ void main() {
     },
   );
 
+  test('reports optional Android capabilities', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    expect(
+      await EmbeddedPhotoPickerController.getCapabilities(),
+      same(EmbeddedPhotoPickerCapabilities.unavailable),
+    );
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    expect(
+      await EmbeddedPhotoPickerController.getCapabilities(),
+      same(EmbeddedPhotoPickerCapabilities.unavailable),
+    );
+    messenger.setMockMethodCallHandler(
+      const MethodChannel('embedded_photo_picker'),
+      (call) async => {
+        'available': true,
+        'androidApiLevel': 34,
+        'uExtensionVersion': 22,
+        'supportsHighlights': true,
+        'supportsInitialExpandedState': true,
+        'supportsSelectionConstraints': true,
+        'supportsLaunchTab': false,
+        'supportsLocationMetadata': false,
+        'supportsCollapsedModeScrolling': false,
+        'supportsEmbeddedUiCustomization': false,
+      },
+    );
+
+    final capabilities = await EmbeddedPhotoPickerController.getCapabilities();
+    expect(capabilities.available, isTrue);
+    expect(capabilities.androidApiLevel, 34);
+    expect(capabilities.uExtensionVersion, 22);
+    expect(capabilities.supportsSelectionConstraints, isTrue);
+    expect(capabilities.supportsLaunchTab, isFalse);
+  });
+
   test(
     'commands preserve URI identity and do not synthesize revoke events',
     () async {

@@ -11,6 +11,7 @@ void main() {
       'accentColor': null,
       'themeNightMode': 0,
       'orderedSelection': false,
+      'selection': null,
     });
   });
 
@@ -37,6 +38,71 @@ void main() {
       EmbeddedPhotoPickerOptions(brightness: Brightness.light)
           .toMap()['themeNightMode'],
       0x10,
+    );
+  });
+
+  test('copies and encodes selection constraints', () {
+    final mimeTypes = ['image/jpeg', 'video/mp4'];
+    final selection = EmbeddedPhotoPickerSelectionOptions(
+      minMediaItemResolutionInPixels: 1000000,
+      maxMediaItemResolutionInPixels: 12000000,
+      maxMediaItemSizeInBytes: 8000000,
+      maxSelectionBatchSizeInBytes: 20000000,
+      minVideoDuration: const Duration(seconds: 1),
+      maxVideoDuration: const Duration(minutes: 2),
+      mimeTypes: mimeTypes,
+    );
+    mimeTypes.clear();
+
+    expect(selection.toMap(), {
+      'minMediaItemResolutionInPixels': 1000000,
+      'maxMediaItemResolutionInPixels': 12000000,
+      'maxMediaItemSizeInBytes': 8000000,
+      'maxSelectionBatchSizeInBytes': 20000000,
+      'minVideoDurationMillis': 1000,
+      'maxVideoDurationMillis': 120000,
+      'mimeTypes': ['image/jpeg', 'video/mp4'],
+    });
+    expect(
+      EmbeddedPhotoPickerOptions(selection: selection).toMap()['selection'],
+      selection.toMap(),
+    );
+    expect(() => selection.mimeTypes.clear(), throwsUnsupportedError);
+  });
+
+  test('rejects invalid selection constraints', () {
+    expect(
+      () => EmbeddedPhotoPickerSelectionOptions(
+        minMediaItemResolutionInPixels: 2,
+        maxMediaItemResolutionInPixels: 1,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerSelectionOptions(maxMediaItemSizeInBytes: 0),
+      throwsArgumentError,
+    );
+    expect(
+      () =>
+          EmbeddedPhotoPickerSelectionOptions(maxSelectionBatchSizeInBytes: -1),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerSelectionOptions(
+        minVideoDuration: const Duration(seconds: 2),
+        maxVideoDuration: const Duration(seconds: 1),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerSelectionOptions(
+        minVideoDuration: const Duration(microseconds: 1),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => EmbeddedPhotoPickerSelectionOptions(mimeTypes: ['text/plain']),
+      throwsArgumentError,
     );
   });
 
